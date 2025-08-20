@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faSignOutAlt, faUserShield, faPlus, faAddressBook } from '@fortawesome/free-solid-svg-icons';
 import Link from 'next/link';
 import Button from '../ui/Button';
+import MobileNav from './MobileNav';
 
 interface HeaderProps {
   user?: {
@@ -12,12 +13,27 @@ interface HeaderProps {
   onLogin: () => void;
   onLogout: () => void;
   onAddRoleForSelf?: () => void;
+  userDashboard?: {
+    dashboardType: 'head' | 'coordinator' | 'rep' | 'public';
+    showMultipleDashboards?: boolean;
+  };
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onAddRoleForSelf }) => {
+const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onAddRoleForSelf, userDashboard }) => {
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <>
+      {/* Mobile Navigation */}
+      <MobileNav 
+        user={user}
+        onLogin={onLogin}
+        onLogout={onLogout}
+        onAddRoleForSelf={onAddRoleForSelf}
+        userDashboard={userDashboard}
+      />
+
+      {/* Desktop Header - Hidden on mobile */}
+      <header className="hidden md:block bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-6">
           <Link href="/" className="text-xl font-bold text-gray-900 hover:text-gray-700">
             RRIS Academic Directory
@@ -84,6 +100,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogin, onLogout, onAddRoleForSe
         </div>
       </div>
     </header>
+    </>
   );
 };
 

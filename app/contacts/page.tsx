@@ -12,6 +12,7 @@ import {
   faUsers,
   faGraduationCap
 } from '@fortawesome/free-solid-svg-icons';
+import { useRouter } from 'next/navigation';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { FirestoreService } from '../../lib/firestore';
 import { parsePhoneNumber, extractWhatsAppNumber, formatForTelLink, formatForWhatsApp } from '../../lib/phoneUtils';
@@ -34,6 +35,7 @@ interface ContactListItem {
 }
 
 export default function ContactsPage() {
+  const router = useRouter();
   const [contacts, setContacts] = useState<ContactListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<ContactListItem | null>(null);
@@ -46,7 +48,7 @@ export default function ContactsPage() {
   const loadContacts = async () => {
     try {
       setLoading(true);
-      const jobHolders = await FirestoreService.getAllJobHolders();
+      const jobHolders = await FirestoreService.getJobHolders(); // No filters = get all
       const contactList = processContactsForList(jobHolders);
       setContacts(contactList);
     } catch (error) {
@@ -193,6 +195,10 @@ export default function ContactsPage() {
     setSelectedContact(null);
   };
 
+  const handleBackToDashboard = () => {
+    router.back();
+  };
+
   const handlePhoneCall = (phoneNumber: string) => {
     const telLink = formatForTelLink(phoneNumber);
     window.location.href = `tel:${telLink}`;
@@ -303,7 +309,15 @@ export default function ContactsPage() {
       {/* Header */}
       <div className="sticky top-0 bg-white z-10 border-b border-gray-200">
         <div className="p-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Contacts</h1>
+          <div className="flex items-center mb-4">
+            <button
+              onClick={handleBackToDashboard}
+              className="p-2 -ml-2 mr-3 text-blue-600 hover:bg-blue-50 rounded-lg md:hidden"
+            >
+              <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
+          </div>
           
           {/* Search Bar */}
           <div className="relative">

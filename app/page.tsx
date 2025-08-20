@@ -227,6 +227,7 @@ function DirectoryApp() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         onAddRoleForSelf={user ? handleAddRoleForSelf : undefined}
+        userDashboard={userDashboard}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
