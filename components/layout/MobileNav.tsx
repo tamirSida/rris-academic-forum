@@ -57,15 +57,15 @@ const MobileNav: React.FC<MobileNavProps> = ({
 
   const navItems = [
     {
-      icon: faHome,
-      label: 'Dashboard',
-      path: '/',
-      show: true
-    },
-    {
       icon: faAddressBook,
       label: 'Contacts',
       path: '/contacts',
+      show: true
+    },
+    {
+      icon: faHome,
+      label: 'Dashboard',
+      path: '/',
       show: true
     }
   ];

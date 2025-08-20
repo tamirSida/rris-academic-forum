@@ -17,6 +17,9 @@ import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { FirestoreService } from '../../lib/firestore';
 import { parsePhoneNumber, extractWhatsAppNumber, formatForTelLink, formatForWhatsApp } from '../../lib/phoneUtils';
 import { JobHolder, RoleType } from '../../types';
+import ContactFilters, { ContactFilterOptions } from '../../components/contacts/ContactFilters';
+import schoolsData from '../../data/schools.json';
+import tracksData from '../../data/tracks.json';
 
 interface ContactListItem {
   id: string;
@@ -40,6 +43,7 @@ export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<ContactListItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<ContactFilterOptions>({});
 
   useEffect(() => {
     loadContacts();
@@ -152,14 +156,72 @@ export default function ContactsPage() {
 
   // Removed formatPhoneNumber and extractWhatsAppNumber - now using phoneUtils
 
+  const getSchoolName = (schoolId: string) => {
+    const school = schoolsData.find(s => s.id === schoolId);
+    return school ? school.name : schoolId;
+  };
+
+  const getTrackName = (trackId: string) => {
+    // Extract track name from trackId format: "school-track-index"
+    const parts = trackId.split('-');
+    if (parts.length >= 3) {
+      const schoolId = parts[0];
+      const trackIndex = parseInt(parts[parts.length - 1]);
+      const schoolTracks = (tracksData as any)[schoolId];
+      if (Array.isArray(schoolTracks) && schoolTracks[trackIndex]) {
+        return schoolTracks[trackIndex];
+      }
+    }
+    return trackId;
+  };
+
+  const applyFilters = (contactsList: ContactListItem[], filterOptions: ContactFilterOptions): ContactListItem[] => {
+    return contactsList.filter(contact => {
+      // Role type filter
+      if (filterOptions.roleType && filterOptions.roleType !== 'all') {
+        if (filterOptions.roleType === 'coordinator' && contact.highestRole.type !== RoleType.COORDINATOR) {
+          return false;
+        }
+        if (filterOptions.roleType === 'rep' && contact.highestRole.type !== RoleType.REP) {
+          return false;
+        }
+      }
+
+      // School filter
+      if (filterOptions.school && contact.highestRole.schoolId !== filterOptions.school) {
+        return false;
+      }
+
+      // Track filter  
+      if (filterOptions.track && contact.highestRole.trackId !== filterOptions.track) {
+        return false;
+      }
+
+      // Year filter (only applies to reps)
+      if (filterOptions.year && contact.highestRole.type === RoleType.REP && contact.highestRole.year !== filterOptions.year) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
   const filteredContacts = useMemo(() => {
-    if (!searchQuery.trim()) return contacts;
-    
-    const query = searchQuery.toLowerCase();
-    return contacts.filter(contact => 
-      contact.searchTerms.some(term => term.includes(query))
-    );
-  }, [contacts, searchQuery]);
+    let result = contacts;
+
+    // Apply filters first
+    result = applyFilters(result, filters);
+
+    // Then apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(contact => 
+        contact.searchTerms.some(term => term.includes(query))
+      );
+    }
+
+    return result;
+  }, [contacts, filters, searchQuery]);
 
   const getRoleIcon = (roleType: RoleType) => {
     switch (roleType) {
@@ -320,7 +382,7 @@ export default function ContactsPage() {
           </div>
           
           {/* Search Bar */}
-          <div className="relative">
+          <div className="relative mb-4">
             <FontAwesomeIcon 
               icon={faSearch} 
               className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" 
@@ -331,6 +393,14 @@ export default function ContactsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex justify-end">
+            <ContactFilters
+              onFilterChange={setFilters}
+              activeFilters={filters}
             />
           </div>
         </div>

@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { AuthProvider } from '../contexts/AuthContext';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/layout/Header';
+import MobileRedirect from '../components/layout/MobileRedirect';
 import DirectoryFilters from '../components/directory/DirectoryFilters';
 import DirectoryGrid from '../components/directory/DirectoryGrid';
+import ContactFilters, { ContactFilterOptions } from '../components/contacts/ContactFilters';
 import AdminPanel, { AdminPanelRef } from '../components/admin/AdminPanel';
 import CoordinatorDashboard from '../components/dashboard/CoordinatorDashboard';
 import LoginModal from '../components/auth/LoginModal';
@@ -26,6 +28,7 @@ import tracksData from '../data/tracks.json';
 function DirectoryApp() {
   const { user, logout } = useAuth();
   const [filters, setFilters] = useState<Filters>({});
+  const [contactFilters, setContactFilters] = useState<ContactFilterOptions>({});
   const [schools, setSchools] = useState<School[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -201,6 +204,36 @@ function DirectoryApp() {
     }
   };
 
+  // Convert ContactFilters to DirectoryFilters
+  const handleContactFiltersChange = (newFilters: ContactFilterOptions) => {
+    setContactFilters(newFilters);
+    
+    // Convert to DirectoryFilters format
+    const directoryFilters: Filters = {};
+    
+    if (newFilters.roleType && newFilters.roleType !== 'all') {
+      if (newFilters.roleType === 'coordinator') {
+        directoryFilters.roleType = RoleType.COORDINATOR;
+      } else if (newFilters.roleType === 'rep') {
+        directoryFilters.roleType = RoleType.REP;
+      }
+    }
+    
+    if (newFilters.school) {
+      directoryFilters.schoolId = newFilters.school;
+    }
+    
+    if (newFilters.track) {
+      directoryFilters.trackId = newFilters.track;
+    }
+    
+    if (newFilters.year) {
+      directoryFilters.year = newFilters.year;
+    }
+    
+    setFilters(directoryFilters);
+  };
+
   const handleRemoveRepRole = async (jobHolder: JobHolder, schoolId: string, trackId: string, year: number) => {
     try {
       await RoleService.removeRoleFromUser(
@@ -218,6 +251,7 @@ function DirectoryApp() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <MobileRedirect />
       <Header
         user={user ? {
           displayName: user.displayName,
@@ -306,12 +340,27 @@ function DirectoryApp() {
         {(userDashboard.dashboardType === 'public' || 
           (user && (!userDashboard.showMultipleDashboards || activeDashboard === 'directory'))) && (
           <>
-            <DirectoryFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              schools={schools}
-              tracks={tracks}
-            />
+            <div className="space-y-4">
+              {/* Mobile-friendly filters */}
+              <div className="block md:hidden">
+                <div className="flex justify-end">
+                  <ContactFilters
+                    onFilterChange={handleContactFiltersChange}
+                    activeFilters={contactFilters}
+                  />
+                </div>
+              </div>
+
+              {/* Desktop filters */}
+              <div className="hidden md:block">
+                <DirectoryFilters
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  schools={schools}
+                  tracks={tracks}
+                />
+              </div>
+            </div>
 
             <DirectoryGrid
               key={refreshKey}
