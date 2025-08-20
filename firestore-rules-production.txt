@@ -1,0 +1,66 @@
+// Production Firestore Security Rules
+// Secure rules with proper authentication and authorization
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Job holders collection - public read, authenticated users can write their own, admins can write all
+    match /jobHolders/{document} {
+      allow read: if true;
+      allow create: if request.auth != null && isValidJobHolder();
+      allow update: if request.auth != null && (request.auth.uid == document || isAdmin() || isCoordinatorInSystem());
+      allow delete: if request.auth != null && isAdmin();
+    }
+    
+    // Organization structure - authenticated read, admin/coordinator write
+    match /organization/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (isAdmin() || isCoordinatorInSystem());
+    }
+    
+    // Schools collection - public read, admin write  
+    match /schools/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Tracks collection - public read, admin write
+    match /tracks/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Users collection - user can read/write their own data, admins can read all
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Helper functions
+    function isAdmin() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    function isCoordinatorInSystem() {
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/organization/structure) &&
+             hasCoordinatorRole();
+    }
+    
+    function hasCoordinatorRole() {
+      let structure = get(/databases/$(database)/documents/organization/structure).data;
+      let coordinators = structure.coordinators;
+      return request.auth.uid == structure.headOfForum ||
+             request.auth.uid in coordinators.values().userId;
+    }
+    
+    function isValidJobHolder() {
+      return request.resource.data.keys().hasAll(['name', 'email', 'roles']) &&
+             request.resource.data.roles is list &&
+             request.resource.data.roles.size() > 0;
+    }
+  }
+}

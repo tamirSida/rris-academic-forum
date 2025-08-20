@@ -1,0 +1,42 @@
+[
+  {
+    "id": "computer-science",
+    "name": "Computer Science",
+    "code": "CS"
+  },
+  {
+    "id": "entrepreneurship",
+    "name": "Entrepreneurship", 
+    "code": "ENT"
+  },
+  {
+    "id": "business",
+    "name": "Business",
+    "code": "BUS"
+  },
+  {
+    "id": "economics",
+    "name": "Economics",
+    "code": "ECO"
+  },
+  {
+    "id": "psychology",
+    "name": "Psychology",
+    "code": "PSY"
+  },
+  {
+    "id": "sustainability",
+    "name": "Sustainability",
+    "code": "SUS"
+  },
+  {
+    "id": "government",
+    "name": "Government",
+    "code": "GOV"
+  },
+  {
+    "id": "communications",
+    "name": "Communications",
+    "code": "COM"
+  }
+]

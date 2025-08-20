@@ -1,0 +1,62 @@
+[
+  {
+    "code": "IL",
+    "name": "Israel",
+    "dialCode": "+972",
+    "flag": "🇮🇱"
+  },
+  {
+    "code": "US",
+    "name": "United States",
+    "dialCode": "+1",
+    "flag": "🇺🇸"
+  },
+  {
+    "code": "GB",
+    "name": "United Kingdom", 
+    "dialCode": "+44",
+    "flag": "🇬🇧"
+  },
+  {
+    "code": "CA",
+    "name": "Canada",
+    "dialCode": "+1",
+    "flag": "🇨🇦"
+  },
+  {
+    "code": "AU",
+    "name": "Australia",
+    "dialCode": "+61",
+    "flag": "🇦🇺"
+  },
+  {
+    "code": "DE",
+    "name": "Germany",
+    "dialCode": "+49",
+    "flag": "🇩🇪"
+  },
+  {
+    "code": "FR",
+    "name": "France",
+    "dialCode": "+33",
+    "flag": "🇫🇷"
+  },
+  {
+    "code": "ES",
+    "name": "Spain",
+    "dialCode": "+34",
+    "flag": "🇪🇸"
+  },
+  {
+    "code": "IT",
+    "name": "Italy",
+    "dialCode": "+39",
+    "flag": "🇮🇹"
+  },
+  {
+    "code": "NL",
+    "name": "Netherlands",
+    "dialCode": "+31",
+    "flag": "🇳🇱"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "computer-science": [
+    "Computer Science",
+    "Computer Science & Entrepreneurship"
+  ],
+  "entrepreneurship": [],
+  "business": [
+    "Business Admin",
+    "Business & Entrepreneurship"
+  ],
+  "economics": [
+    "Economics & Entrepreneurship",
+    "Business & Economics"
+  ],
+  "psychology": [
+    "Psychology"
+  ],
+  "sustainability": [
+    "Government & Sustainability"
+  ],
+  "government": [
+    "Government"
+  ],
+  "communications": [
+    "Communications"
+  ]
+}

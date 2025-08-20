@@ -1,0 +1,13 @@
+// Temporary Firestore Security Rules - DEVELOPMENT ONLY
+// These rules allow read/write access to all users for testing
+// Replace with production rules once admin setup is complete
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to all documents for all users (TEMPORARY)
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
