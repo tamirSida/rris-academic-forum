@@ -3,9 +3,8 @@ import {
   User as FirebaseUser, 
   onAuthStateChanged, 
   signInWithEmailAndPassword,
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup
+  sendPasswordResetEmail,
+  signOut
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { FirestoreService } from '../lib/firestore';
@@ -16,8 +15,8 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,13 +80,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
-
   const logout = async () => {
     await signOut(auth);
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
   };
 
   const value: AuthContextType = {
@@ -95,8 +93,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     firebaseUser,
     loading,
     login,
-    loginWithGoogle,
-    logout
+    logout,
+    sendPasswordResetEmail: sendPasswordReset
   };
 
   return (

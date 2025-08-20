@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope, faLock, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
-import { faGoogle } from '@fortawesome/free-brands-svg-icons';
+import { faEnvelope, faLock, faSignInAlt, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
@@ -13,13 +12,16 @@ interface LoginModalProps {
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
-  const { login, loginWithGoogle } = useAuth();
+  const { login, sendPasswordResetEmail } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,16 +59,21 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleForgotPassword = async () => {
+    if (!formData.email.trim()) {
+      setErrors({ email: 'Please enter your email address first' });
+      return;
+    }
+
     try {
       setLoading(true);
       setErrors({});
-      await loginWithGoogle();
-      onClose();
+      await sendPasswordResetEmail(formData.email);
+      setResetEmailSent(true);
     } catch (error: any) {
-      console.error('Google login error:', error);
+      console.error('Password reset error:', error);
       setErrors({ 
-        submit: 'Google login failed. Please try again.' 
+        submit: 'Failed to send reset email. Please check your email address.' 
       });
     } finally {
       setLoading(false);
@@ -78,6 +85,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       onClose();
       setFormData({ email: '', password: '' });
       setErrors({});
+      setShowPassword(false);
+      setShowForgotPassword(false);
+      setResetEmailSent(false);
     }
   };
 
@@ -101,53 +111,65 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           required
         />
 
-        <Input
-          label="Password"
-          type="password"
-          value={formData.password}
-          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-          error={errors.password}
-          icon={faLock}
-          fullWidth
-          disabled={loading}
-          required
-        />
+        <div className="relative">
+          <Input
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            value={formData.password}
+            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+            error={errors.password}
+            icon={faLock}
+            fullWidth
+            disabled={loading}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 focus:outline-none"
+            disabled={loading}
+          >
+            <FontAwesomeIcon 
+              icon={showPassword ? faEyeSlash : faEye} 
+              className="h-4 w-4" 
+            />
+          </button>
+        </div>
 
         {errors.submit && (
           <div className="text-red-600 text-sm">{errors.submit}</div>
         )}
 
-        <div className="space-y-3">
-          <Button
-            type="submit"
-            variant="primary"
-            loading={loading}
-            icon={faSignInAlt}
-            fullWidth
-          >
-            Sign In
-          </Button>
+        {resetEmailSent ? (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <p className="text-green-800 text-sm">
+              Password reset email sent! Please check your inbox and follow the instructions to reset your password.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <Button
+              type="submit"
+              variant="primary"
+              loading={loading}
+              icon={faSignInAlt}
+              fullWidth
+            >
+              Sign In
+            </Button>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or</span>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={loading}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline focus:outline-none disabled:opacity-50"
+              >
+                Forgot your password?
+              </button>
             </div>
           </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleGoogleLogin}
-            loading={loading}
-            icon={faGoogle}
-            fullWidth
-          >
-            Continue with Google
-          </Button>
-        </div>
+        )}
       </form>
     </Modal>
   );
