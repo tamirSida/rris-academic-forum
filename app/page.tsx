@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { AuthProvider } from '../contexts/AuthContext';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/layout/Header';
@@ -263,6 +264,12 @@ function DirectoryApp() {
               >
                 Full Directory
               </button>
+              <Link
+                href="/contacts"
+                className="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-center"
+              >
+                Contacts
+              </Link>
             </div>
           </div>
         )}
