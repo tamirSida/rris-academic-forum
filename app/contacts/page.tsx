@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { AuthProvider, useAuth } from '../../contexts/AuthContext';
+import Header from '../../components/layout/Header';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, 
@@ -31,14 +33,22 @@ interface ContactListItem {
     trackId?: string;
     year?: number;
   };
+  allRoles: Array<{
+    type: RoleType;
+    title: string;
+    schoolId?: string;
+    trackId?: string;
+    year?: number;
+  }>;
   phone: string;
   whatsapp?: string;
   email?: string;
   searchTerms: string[];
 }
 
-export default function ContactsPage() {
+function ContactsPageContent() {
   const router = useRouter();
+  const { user, logout } = useAuth();
   const [contacts, setContacts] = useState<ContactListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<ContactListItem | null>(null);
@@ -64,6 +74,7 @@ export default function ContactsPage() {
 
   const processContactsForList = (jobHolders: JobHolder[]): ContactListItem[] => {
     return jobHolders.map(jobHolder => {
+      const allRoles = processAllRoles(jobHolder.roles);
       const highestRole = getHighestRole(jobHolder.roles);
       const searchTerms = generateSearchTerms(jobHolder, highestRole);
       const parsedPhone = parsePhoneNumber(jobHolder.phone);
@@ -72,12 +83,36 @@ export default function ContactsPage() {
         id: jobHolder.id,
         name: jobHolder.name,
         highestRole,
+        allRoles,
         phone: parsedPhone.formatted,
         whatsapp: parsedPhone.formatted, // Same as phone for now
         email: jobHolder.email,
         searchTerms
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const processAllRoles = (roles: any[]) => {
+    const roleHierarchy = {
+      [RoleType.HEAD_OF_ACADEMIC_FORUM]: { priority: 3, title: 'Head of Academic Forum' },
+      [RoleType.COORDINATOR]: { priority: 2, title: 'Coordinator' },
+      [RoleType.REP]: { priority: 1, title: 'Representative' }
+    };
+
+    return roles.map(role => {
+      const roleInfo = roleHierarchy[role.type as RoleType];
+      return {
+        type: role.type,
+        title: roleInfo?.title || role.type,
+        schoolId: role.schoolId,
+        trackId: role.trackId,
+        year: role.year
+      };
+    }).sort((a, b) => {
+      const aPriority = roleHierarchy[a.type as RoleType]?.priority || 0;
+      const bPriority = roleHierarchy[b.type as RoleType]?.priority || 0;
+      return bPriority - aPriority; // Highest priority first
+    });
   };
 
   const getHighestRole = (roles: any[]) => {
@@ -177,29 +212,40 @@ export default function ContactsPage() {
 
   const applyFilters = (contactsList: ContactListItem[], filterOptions: ContactFilterOptions): ContactListItem[] => {
     return contactsList.filter(contact => {
-      // Role type filter
+      // For role type filter, check ALL roles, not just highest
       if (filterOptions.roleType && filterOptions.roleType !== 'all') {
-        if (filterOptions.roleType === 'coordinator' && contact.highestRole.type !== RoleType.COORDINATOR) {
+        const hasMatchingRole = contact.allRoles.some(role => {
+          if (filterOptions.roleType === 'coordinator') {
+            return role.type === RoleType.COORDINATOR;
+          }
+          if (filterOptions.roleType === 'rep') {
+            return role.type === RoleType.REP;
+          }
           return false;
-        }
-        if (filterOptions.roleType === 'rep' && contact.highestRole.type !== RoleType.REP) {
-          return false;
-        }
+        });
+        
+        if (!hasMatchingRole) return false;
       }
 
-      // School filter
-      if (filterOptions.school && contact.highestRole.schoolId !== filterOptions.school) {
-        return false;
-      }
+      // For track/year filters, check ALL roles for matches
+      if (filterOptions.track || filterOptions.year) {
+        const hasMatchingCriteria = contact.allRoles.some(role => {
+          // Track filter
+          if (filterOptions.track && role.trackId !== filterOptions.track) {
+            return false;
+          }
 
-      // Track filter  
-      if (filterOptions.track && contact.highestRole.trackId !== filterOptions.track) {
-        return false;
-      }
+          // Year filter (only applies to reps)
+          if (filterOptions.year) {
+            if (role.type !== RoleType.REP || role.year !== filterOptions.year) {
+              return false;
+            }
+          }
 
-      // Year filter (only applies to reps)
-      if (filterOptions.year && contact.highestRole.type === RoleType.REP && contact.highestRole.year !== filterOptions.year) {
-        return false;
+          return true;
+        });
+
+        if (!hasMatchingCriteria) return false;
       }
 
       return true;
@@ -247,6 +293,36 @@ export default function ContactsPage() {
       default:
         return 'text-gray-600';
     }
+  };
+
+  const getRoleDisplayText = (role: any) => {
+    if (role.type === RoleType.HEAD_OF_ACADEMIC_FORUM) {
+      return 'Head of Academic Forum';
+    }
+    
+    if (role.type === RoleType.COORDINATOR) {
+      const schoolName = role.schoolId ? getSchoolName(role.schoolId) : '';
+      return `Coordinator${schoolName ? ` - ${schoolName}` : ''}`;
+    }
+    
+    if (role.type === RoleType.REP) {
+      let displayText = '';
+      
+      if (role.year) {
+        displayText += `Year ${role.year} `;
+      }
+      
+      displayText += 'Rep';
+      
+      if (role.trackId) {
+        const trackName = getTrackName(role.trackId);
+        displayText += ` - ${trackName}`;
+      }
+      
+      return displayText;
+    }
+    
+    return role.title || role.type;
   };
 
   const handleContactClick = (contact: ContactListItem) => {
@@ -303,12 +379,16 @@ export default function ContactsPage() {
               {selectedContact.name}
             </h2>
             
-            <div className="flex items-center justify-center space-x-2 text-sm">
-              <FontAwesomeIcon 
-                icon={getRoleIcon(selectedContact.highestRole.type)} 
-                className={`h-4 w-4 ${getRoleColor(selectedContact.highestRole.type)}`}
-              />
-              <span className="text-gray-600">{selectedContact.highestRole.title}</span>
+            <div className="space-y-2">
+              {selectedContact.allRoles.map((role, index) => (
+                <div key={index} className="flex items-center justify-center space-x-2 text-sm">
+                  <FontAwesomeIcon 
+                    icon={getRoleIcon(role.type)} 
+                    className={`h-4 w-4 ${getRoleColor(role.type)}`}
+                  />
+                  <span className="text-gray-600">{getRoleDisplayText(role)}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -365,11 +445,23 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Contacts List View */}
+    <div className="min-h-screen bg-gray-50">
+      <Header
+        user={user ? {
+          displayName: user.displayName,
+          email: user.email,
+          isAdmin: user.isAdmin
+        } : undefined}
+        onLogin={() => {}}
+        onLogout={logout}
+        userDashboard={{ dashboardType: 'public' }}
+      />
       
-      {/* Header */}
-      <div className="sticky top-0 bg-white z-10 border-b border-gray-200">
+      <div className="bg-white min-h-screen">
+        {/* Contacts List View */}
+        
+        {/* Header */}
+        <div className="sticky top-0 bg-white z-10 border-b border-gray-200">
         <div className="p-4">
           <div className="flex items-center mb-4">
             <button
@@ -396,7 +488,43 @@ export default function ContactsPage() {
             />
           </div>
 
-          {/* Filters */}
+          {/* Quick Action Filters */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setFilters({})}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                !filters.roleType && !filters.track && !filters.year
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+              }`}
+            >
+              All
+            </button>
+            
+            <button
+              onClick={() => setFilters({ roleType: 'coordinator' })}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                filters.roleType === 'coordinator'
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+              }`}
+            >
+              Coordinators
+            </button>
+            
+            <button
+              onClick={() => setFilters({ roleType: 'rep' })}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                filters.roleType === 'rep'
+                  ? 'bg-green-100 text-green-700 border border-green-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+              }`}
+            >
+              Reps
+            </button>
+          </div>
+
+          {/* Advanced Filters */}
           <div className="flex justify-end">
             <ContactFilters
               onFilterChange={setFilters}
@@ -423,7 +551,7 @@ export default function ContactsPage() {
             <button
               key={contact.id}
               onClick={() => handleContactClick(contact)}
-              className="w-full flex items-center p-4 hover:bg-gray-50 transition-colors text-left"
+              className="w-full flex items-center p-4 hover:bg-gray-50 transition-colors text-left min-h-[120px]"
             >
               {/* Avatar */}
               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
@@ -437,12 +565,24 @@ export default function ContactsPage() {
                 <p className="text-base font-medium text-gray-900 truncate">
                   {contact.name}
                 </p>
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <FontAwesomeIcon 
-                    icon={getRoleIcon(contact.highestRole.type)} 
-                    className={`h-3 w-3 ${getRoleColor(contact.highestRole.type)}`}
-                  />
-                  <span className="truncate">{contact.highestRole.title}</span>
+                <div className="space-y-1">
+                  {contact.allRoles.slice(0, 3).map((role, index) => {
+                    const roleDisplay = getRoleDisplayText(role);
+                    return (
+                      <div key={index} className="flex items-center space-x-2 text-sm text-gray-500">
+                        <FontAwesomeIcon 
+                          icon={getRoleIcon(role.type)} 
+                          className={`h-3 w-3 ${getRoleColor(role.type)}`}
+                        />
+                        <span className="truncate">{roleDisplay}</span>
+                      </div>
+                    );
+                  })}
+                  {contact.allRoles.length > 3 && (
+                    <div className="text-xs text-gray-400">
+                      +{contact.allRoles.length - 3} more role{contact.allRoles.length - 3 !== 1 ? 's' : ''}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -456,5 +596,14 @@ export default function ContactsPage() {
         )}
       </div>
     </div>
+    </div>
+  );
+}
+
+export default function ContactsPage() {
+  return (
+    <AuthProvider>
+      <ContactsPageContent />
+    </AuthProvider>
   );
 }

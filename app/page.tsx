@@ -219,9 +219,6 @@ function DirectoryApp() {
       }
     }
     
-    if (newFilters.school) {
-      directoryFilters.schoolId = newFilters.school;
-    }
     
     if (newFilters.track) {
       directoryFilters.trackId = newFilters.track;

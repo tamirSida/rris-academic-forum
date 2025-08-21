@@ -20,7 +20,6 @@ interface ContactFiltersProps {
 
 export interface ContactFilterOptions {
   roleType?: 'coordinator' | 'rep' | 'all';
-  school?: string;
   track?: string;
   year?: number;
 }
@@ -56,19 +55,8 @@ const ContactFilters: React.FC<ContactFiltersProps> = ({
       ...activeFilters, 
       roleType,
       // Clear other filters when switching roles
-      school: undefined,
       track: undefined,
       year: undefined
-    };
-    onFilterChange(newFilters);
-  };
-
-  const handleSchoolFilter = (schoolId: string) => {
-    const newFilters = { 
-      ...activeFilters, 
-      school: schoolId === 'all' ? undefined : schoolId,
-      // Clear track when changing school
-      track: undefined
     };
     onFilterChange(newFilters);
   };
@@ -94,17 +82,7 @@ const ContactFilters: React.FC<ContactFiltersProps> = ({
     setIsOpen(false);
   };
 
-  const hasActiveFilters = activeFilters.roleType || activeFilters.school || activeFilters.track || activeFilters.year;
-
-  const getFilteredTracks = () => {
-    if (!activeFilters.school) return availableTracks;
-    return availableTracks.filter(track => track.schoolId === activeFilters.school);
-  };
-
-  const getSchoolName = (schoolId: string) => {
-    const school = schoolsData.find(s => s.id === schoolId);
-    return school ? school.name : schoolId;
-  };
+  const hasActiveFilters = activeFilters.roleType || activeFilters.track || activeFilters.year;
 
   const getTrackName = (trackId: string) => {
     const track = availableTracks.find(t => t.id === trackId);
@@ -196,69 +174,49 @@ const ContactFilters: React.FC<ContactFiltersProps> = ({
                     }`}
                   >
                     <FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4 mr-2 text-green-500" />
-                    <span>Representatives</span>
+                    <span>Reps</span>
                   </button>
                 </div>
               </div>
 
-              {/* School Filter */}
+              {/* Track Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  School
+                  Track
                 </label>
                 <select
-                  value={activeFilters.school || 'all'}
-                  onChange={(e) => handleSchoolFilter(e.target.value)}
+                  value={activeFilters.track || 'all'}
+                  onChange={(e) => handleTrackFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">All Schools</option>
-                  {schoolsData.map(school => (
-                    <option key={school.id} value={school.id}>
-                      {school.name}
-                    </option>
-                  ))}
+                  <option value="all">All Tracks</option>
+                  {availableTracks.map(track => {
+                    const schoolName = schoolsData.find(s => s.id === track.schoolId)?.name || '';
+                    return (
+                      <option key={track.id} value={track.id}>
+                        {track.name} ({schoolName})
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
-              {/* Track Filter - Only show if school is selected or role is rep */}
-              {(activeFilters.school || activeFilters.roleType === 'rep') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Track
-                  </label>
-                  <select
-                    value={activeFilters.track || 'all'}
-                    onChange={(e) => handleTrackFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">All Tracks</option>
-                    {getFilteredTracks().map(track => (
-                      <option key={track.id} value={track.id}>
-                        {track.name} {!activeFilters.school && `(${getSchoolName(track.schoolId)})`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Year Filter - Only show for reps */}
-              {activeFilters.roleType === 'rep' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Year
-                  </label>
-                  <select
-                    value={activeFilters.year || 0}
-                    onChange={(e) => handleYearFilter(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={0}>All Years</option>
-                    <option value={1}>Year 1</option>
-                    <option value={2}>Year 2</option>
-                    <option value={3}>Year 3</option>
-                  </select>
-                </div>
-              )}
+              {/* Year Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Year
+                </label>
+                <select
+                  value={activeFilters.year || 0}
+                  onChange={(e) => handleYearFilter(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={0}>All Years</option>
+                  <option value={1}>Year 1</option>
+                  <option value={2}>Year 2</option>
+                  <option value={3}>Year 3</option>
+                </select>
+              </div>
             </div>
 
             {/* Active Filters Summary */}
@@ -267,12 +225,7 @@ const ContactFilters: React.FC<ContactFiltersProps> = ({
                 <div className="flex flex-wrap gap-2">
                   {activeFilters.roleType && activeFilters.roleType !== 'all' && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {activeFilters.roleType === 'coordinator' ? 'Coordinators' : 'Representatives'}
-                    </span>
-                  )}
-                  {activeFilters.school && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {getSchoolName(activeFilters.school)}
+                      {activeFilters.roleType === 'coordinator' ? 'Coordinators' : 'Reps'}
                     </span>
                   )}
                   {activeFilters.track && (

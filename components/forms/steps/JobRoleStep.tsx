@@ -47,9 +47,9 @@ const JobRoleStep: React.FC<JobRoleStepProps> = ({
   isAdminSetup
 }) => {
   const authResult = isAdminSetup ? null : useAuth();
-  const { user } = isAdminSetup ? 
-    { user: currentUser || { uid: 'admin-setup-temp', email: 'admin@setup.temp', displayName: 'Admin' } } : 
-    authResult;
+  const user = isAdminSetup ? 
+    (currentUser || { uid: 'admin-setup-temp', email: 'admin@setup.temp', displayName: 'Admin' }) : 
+    authResult?.user;
   const [availablePositions, setAvailablePositions] = useState<{
     coordinatorPositions: Array<{
       schoolId: string;
